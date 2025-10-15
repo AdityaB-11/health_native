@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, StatusBar, Image } from 'react-native';
 import { Searchbar, Title, Paragraph, Chip, ActivityIndicator, Surface } from 'react-native-paper';
 import { getArticles } from '../api/services';
 import { Article } from '../types';
@@ -84,17 +84,19 @@ const ArticleListScreen = ({ navigation }: any) => {
         activeOpacity={0.9}
       >
         <Surface style={styles.blogCard} elevation={3}>
-          <LinearGradient
-            colors={imageData.gradient}
-            style={styles.blogImage}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <MaterialCommunityIcons name={imageData.icon as any} size={64} color="rgba(255,255,255,0.9)" />
+          <View style={styles.blogImageContainer}>
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.blogImage}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={styles.imageOverlay}
+            />
             <View style={styles.categoryBadge}>
               <Paragraph style={styles.categoryBadgeText}>{item.category}</Paragraph>
             </View>
-          </LinearGradient>
+          </View>
 
           <View style={styles.blogContent}>
             <View style={styles.blogMeta}>
@@ -286,8 +288,20 @@ const styles = StyleSheet.create({
   },
   blogImage: {
     height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: '100%',
+    resizeMode: 'cover',
+  },
+  blogImageContainer: {
+    height: 200,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 80,
   },
   categoryBadge: {
     position: 'absolute',

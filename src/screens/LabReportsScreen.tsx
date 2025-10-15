@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
-import { Card, Title, Paragraph, Button, Chip, FAB, ActivityIndicator } from 'react-native-paper';
+import { View, StyleSheet, FlatList, Linking, Alert, Modal, Image, Dimensions } from 'react-native';
+import { Card, Title, Paragraph, Button, Chip, FAB, ActivityIndicator, IconButton } from 'react-native-paper';
 import { getLabReports } from '../api/services';
 import { LabReport } from '../types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -12,6 +12,8 @@ const LabReportsScreen = ({ route, navigation }: any) => {
   const { user } = useAuth();
   const [reports, setReports] = useState<LabReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [selectedImageUri, setSelectedImageUri] = useState<string>('');
 
   useEffect(() => {
     fetchReports();
@@ -50,6 +52,44 @@ const LabReportsScreen = ({ route, navigation }: any) => {
     }
   };
 
+  const handleViewReport = async (report: LabReport) => {
+    try {
+      if (!report.fileUri) {
+        Alert.alert('Error', 'File not available');
+        return;
+      }
+
+      if (report.fileType === 'image') {
+        // For images, show in modal viewer
+        setSelectedImageUri(report.fileUri);
+        setImageModalVisible(true);
+      } else if (report.fileType === 'pdf') {
+        // For PDFs, try to open with external app (may not work with local files)
+        if (report.fileUri.startsWith('http')) {
+          // External URL - can open directly
+          const supported = await Linking.canOpenURL(report.fileUri);
+          if (supported) {
+            await Linking.openURL(report.fileUri);
+          } else {
+            Alert.alert('Error', 'Cannot open this file type on your device');
+          }
+        } else {
+          // Local file - show info alert
+          Alert.alert(
+            'PDF Report', 
+            `File: ${report.fileName}\nType: ${report.reportType}\nDate: ${report.date}\n\nNote: Local PDF files cannot be opened directly. In a production app, files would be uploaded to cloud storage for viewing.`,
+            [{ text: 'OK' }]
+          );
+        }
+      } else {
+        Alert.alert('Error', 'Unsupported file type');
+      }
+    } catch (error) {
+      console.error('Error opening report:', error);
+      Alert.alert('Error', 'Failed to open report. This may be a local file that cannot be accessed directly.');
+    }
+  };
+
   const renderReport = ({ item }: { item: LabReport }) => (
     <Card style={styles.card}>
       <Card.Content>
@@ -69,8 +109,13 @@ const LabReportsScreen = ({ route, navigation }: any) => {
         {item.notes && (
           <Paragraph style={styles.notes}>Notes: {item.notes}</Paragraph>
         )}
-        <Button mode="outlined" style={styles.viewButton} icon="eye">
-          View Report
+        <Button 
+          mode="outlined" 
+          style={styles.viewButton} 
+          icon={item.fileType === 'image' ? 'eye' : 'file-pdf-box'}
+          onPress={() => handleViewReport(item)}
+        >
+          {item.fileType === 'image' ? 'View Image' : 'View PDF'}
         </Button>
       </Card.Content>
     </Card>
@@ -102,8 +147,38 @@ const LabReportsScreen = ({ route, navigation }: any) => {
         style={styles.fab}
         icon="upload"
         label="Upload Report"
-        onPress={() => navigation.navigate('UploadReport', { patientId })}
+        onPress={() => {
+          const targetPatientId = user?.role === 'patient' ? user.patientId : patientId;
+          navigation.navigate('UploadReport', { patientId: targetPatientId });
+        }}
       />
+
+      {/* Image Viewer Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <IconButton
+              icon="close"
+              iconColor="white"
+              size={30}
+              onPress={() => setImageModalVisible(false)}
+            />
+          </View>
+          <View style={styles.imageContainer}>
+            {selectedImageUri ? (
+              <Image
+                source={{ uri: selectedImageUri }}
+                style={styles.fullScreenImage}
+                resizeMode="contain"
+              />
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -167,6 +242,29 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#6200ee',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalHeader: {
+    position: 'absolute',
+    top: 40,
+    right: 10,
+    zIndex: 1,
+  },
+  imageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+  },
+  fullScreenImage: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height,
   },
 });
 

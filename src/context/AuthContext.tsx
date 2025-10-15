@@ -31,6 +31,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               name: userData.name,
               role: userData.role,
               doctorId: userData.doctorId,
+              patientId: userData.patientId,
             };
             setUser(user);
             await AsyncStorage.setItem('user', JSON.stringify(user));
@@ -61,6 +62,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           name: userData.name,
           role: userData.role,
           doctorId: userData.doctorId,
+          patientId: userData.patientId,
         };
         setUser(user);
         await AsyncStorage.setItem('user', JSON.stringify(user));

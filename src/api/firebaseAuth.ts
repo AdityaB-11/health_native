@@ -19,6 +19,7 @@ export interface UserData {
   role: 'admin' | 'doctor' | 'patient';
   phone?: string;
   doctorId?: string; // Link to doctor profile if role is 'doctor'
+  patientId?: string; // Link to patient profile if role is 'patient'
   createdAt?: any;
 }
 

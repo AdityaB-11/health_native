@@ -1,18 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { TextInput, Button, Title, Paragraph, Card, RadioButton } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadLabReport } from '../api/services';
+import { useAuth } from '../context/AuthContext';
 
 const UploadReportScreen = ({ route, navigation }: any) => {
   const { patientId } = route.params || {};
+  const { user } = useAuth();
   const [patientName, setPatientName] = useState('');
   const [reportType, setReportType] = useState('');
   const [notes, setNotes] = useState('');
   const [fileType, setFileType] = useState<'pdf' | 'image'>('pdf');
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  // Auto-fill patient name if user is a patient
+  useEffect(() => {
+    if (user?.role === 'patient' && user.name) {
+      setPatientName(user.name);
+    }
+  }, [user]);
 
   const pickDocument = async () => {
     try {
@@ -58,15 +67,23 @@ const UploadReportScreen = ({ route, navigation }: any) => {
       return;
     }
 
+    // Determine the correct patient ID to use
+    let finalPatientId = patientId;
+    if (user?.role === 'patient' && user.patientId) {
+      finalPatientId = user.patientId;
+    }
+
+    console.log('📤 Uploading report for patient:', finalPatientId);
+
     setLoading(true);
     try {
       await uploadLabReport({
-        patientId: patientId || 'unknown',
+        patientId: finalPatientId || 'unknown',
         patientName,
         reportType,
         date: new Date().toISOString().split('T')[0],
         fileUri: selectedFile.uri,
-        fileName: selectedFile.name || 'report',
+        fileName: selectedFile.name || `${reportType}_${Date.now()}`,
         fileType,
         notes,
       });
@@ -75,6 +92,7 @@ const UploadReportScreen = ({ route, navigation }: any) => {
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
+      console.error('Upload error:', error);
       Alert.alert('Error', 'Failed to upload report. Please try again.');
     } finally {
       setLoading(false);
@@ -93,6 +111,8 @@ const UploadReportScreen = ({ route, navigation }: any) => {
             onChangeText={setPatientName}
             mode="outlined"
             style={styles.input}
+            disabled={user?.role === 'patient'}
+            right={user?.role === 'patient' ? <TextInput.Icon icon="lock" /> : undefined}
           />
 
           <TextInput
