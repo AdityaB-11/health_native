@@ -121,7 +121,7 @@ const LoginScreen = () => {
                   <Text style={styles.demoEmail}>patient@health.com</Text>
                 </View>
               </View>
-              <Text style={styles.demoPassword}>Password: password</Text>
+              <Text style={styles.demoPassword}>Password: 12345678,87654321,12345678</Text>
             </Surface>
           </Surface>
         </KeyboardAvoidingView>

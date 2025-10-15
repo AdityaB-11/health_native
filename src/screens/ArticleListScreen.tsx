@@ -85,10 +85,29 @@ const ArticleListScreen = ({ navigation }: any) => {
       >
         <Surface style={styles.blogCard} elevation={3}>
           <View style={styles.blogImageContainer}>
-            <Image
-              source={{ uri: item.imageUrl }}
-              style={styles.blogImage}
-            />
+            {item.imageUrl ? (
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.blogImage}
+                resizeMode="cover"
+                onError={() => console.log('Image failed to load:', item.imageUrl)}
+              />
+            ) : (
+              <LinearGradient
+                colors={articleImages[item.id]?.gradient || ['#4ECDC4', '#44A08D']}
+                style={styles.blogImage}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <View style={styles.placeholderContent}>
+                  <MaterialCommunityIcons 
+                    name={articleImages[item.id]?.icon as any || 'newspaper-variant'} 
+                    size={64} 
+                    color="rgba(255,255,255,0.9)" 
+                  />
+                </View>
+              </LinearGradient>
+            )}
             <LinearGradient
               colors={['transparent', 'rgba(0,0,0,0.7)']}
               style={styles.imageOverlay}
@@ -295,6 +314,11 @@ const styles = StyleSheet.create({
     height: 200,
     position: 'relative',
     overflow: 'hidden',
+  },
+  placeholderContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageOverlay: {
     position: 'absolute',

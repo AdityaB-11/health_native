@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { ActivityIndicator, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Auth Screens
+import LandingScreen from '../screens/LandingScreen';
 import LoginScreen from '../screens/LoginScreen';
 
 // Main Screens
@@ -167,12 +169,54 @@ const MainTabs = () => {
 
 const AppNavigator = () => {
   const { isAuthenticated, loading } = useAuth();
+  const [showLanding, setShowLanding] = useState(true);
+  const [landingLoading, setLandingLoading] = useState(true);
 
-  if (loading) {
+  useEffect(() => {
+    const checkLandingShown = async () => {
+      try {
+        const hasSeenLanding = await AsyncStorage.getItem('hasSeenLanding');
+        if (hasSeenLanding === 'true') {
+          setShowLanding(false);
+        }
+      } catch (error) {
+        console.error('Error checking landing status:', error);
+      } finally {
+        setLandingLoading(false);
+      }
+    };
+
+    checkLandingShown();
+  }, []);
+
+  const handleLandingComplete = async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenLanding', 'true');
+      setShowLanding(false);
+    } catch (error) {
+      console.error('Error saving landing status:', error);
+      setShowLanding(false); // Continue anyway
+    }
+  };
+
+  if (loading || landingLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#6200ee" />
       </View>
+    );
+  }
+
+  // Show landing screen first
+  if (showLanding) {
+    return (
+      <NavigationContainer>
+        <Stack.Navigator id="LandingStack" screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Landing">
+            {() => <LandingScreen onContinue={handleLandingComplete} />}
+          </Stack.Screen>
+        </Stack.Navigator>
+      </NavigationContainer>
     );
   }
 
