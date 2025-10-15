@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types';
+import { loginUser as firebaseLogin, getCurrentUserData, subscribeToAuthChanges, logoutUser as firebaseLogout } from '../api/firebaseAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -17,46 +18,63 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await AsyncStorage.getItem('user');
-      const token = await AsyncStorage.getItem('token');
-      if (userData && token) {
-        setUser(JSON.parse(userData));
+    // Subscribe to Firebase auth state changes
+    const unsubscribe = subscribeToAuthChanges(async (firebaseUser) => {
+      if (firebaseUser) {
+        // User is signed in, fetch their data from Firestore
+        try {
+          const userData = await getCurrentUserData(firebaseUser.uid);
+          if (userData) {
+            const user: User = {
+              id: firebaseUser.uid,
+              email: userData.email,
+              name: userData.name,
+              role: userData.role,
+              doctorId: userData.doctorId,
+            };
+            setUser(user);
+            await AsyncStorage.setItem('user', JSON.stringify(user));
+          }
+        } catch (error) {
+          console.error('Failed to load user data:', error);
+        }
+      } else {
+        // User is signed out
+        setUser(null);
+        await AsyncStorage.removeItem('user');
       }
-    } catch (error) {
-      console.error('Failed to load user:', error);
-    } finally {
       setLoading(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      // Mock login - replace with actual API call
-      const mockUser: User = {
-        id: '1',
-        email: email,
-        name: email === 'admin@health.com' ? 'Admin User' : 'Regular User',
-        role: email === 'admin@health.com' ? 'admin' : 'patient',
-        token: 'mock-jwt-token-' + Date.now(),
-      };
-
-      await AsyncStorage.setItem('user', JSON.stringify(mockUser));
-      await AsyncStorage.setItem('token', mockUser.token!);
-      setUser(mockUser);
+      const firebaseUser = await firebaseLogin(email, password);
+      const userData = await getCurrentUserData(firebaseUser.uid);
+      
+      if (userData) {
+        const user: User = {
+          id: firebaseUser.uid,
+          email: userData.email,
+          name: userData.name,
+          role: userData.role,
+          doctorId: userData.doctorId,
+        };
+        setUser(user);
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+      }
     } catch (error) {
-      throw new Error('Login failed');
+      console.error('Login error:', error);
+      throw error;
     }
   };
 
   const logout = async () => {
     try {
+      await firebaseLogout();
       await AsyncStorage.removeItem('user');
-      await AsyncStorage.removeItem('token');
       setUser(null);
     } catch (error) {
       console.error('Logout failed:', error);

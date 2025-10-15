@@ -1,0 +1,95 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ==================== HELPER FUNCTIONS ====================
+    
+    // Check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Check if user is admin
+    function isAdmin() {
+      return isSignedIn() && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Check if user owns the resource
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // Validate file size (max 10MB)
+    function validFileSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // Validate image file types
+    function validImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Validate PDF file type
+    function validPDFType() {
+      return request.resource.contentType == 'application/pdf';
+    }
+    
+    // ==================== LAB REPORTS ====================
+    
+    // Lab reports - PDF files only, admin access only
+    match /lab-reports/{reportId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() && validPDFType() && validFileSize();
+    }
+    
+    match /lab-reports/{patientId}/{reportId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() && validPDFType() && validFileSize();
+    }
+    
+    // ==================== ARTICLE IMAGES ====================
+    
+    // Article images - admins can upload, everyone can read
+    match /articles/{articleId} {
+      allow read: if true;
+      allow write: if isAdmin() && validImageType() && validFileSize();
+    }
+    
+    match /articles/{articleId}/{imageId} {
+      allow read: if true;
+      allow write: if isAdmin() && validImageType() && validFileSize();
+    }
+    
+    // ==================== PROFILE PICTURES ====================
+    
+    // User profile pictures - users can upload their own, everyone can read
+    match /profiles/{userId}/{imageId} {
+      allow read: if true;
+      allow write: if isOwner(userId) && validImageType() && validFileSize();
+    }
+    
+    // ==================== DOCTOR IMAGES ====================
+    
+    // Doctor profile pictures - admins can upload, everyone can read
+    match /doctors/{doctorId}/{imageId} {
+      allow read: if true;
+      allow write: if isAdmin() && validImageType() && validFileSize();
+    }
+    
+    // ==================== MEDICINE IMAGES ====================
+    
+    // Medicine product images - admins can upload, everyone can read
+    match /medicines/{medicineId}/{imageId} {
+      allow read: if true;
+      allow write: if isAdmin() && validImageType() && validFileSize();
+    }
+    
+    // ==================== DEFAULT DENY ====================
+    
+    // Deny all other access by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

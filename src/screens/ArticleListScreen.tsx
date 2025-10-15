@@ -5,6 +5,7 @@ import { getArticles } from '../api/services';
 import { Article } from '../types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { formatDate } from '../utils/dateUtils';
 
 const ArticleListScreen = ({ navigation }: any) => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -118,7 +119,7 @@ const ArticleListScreen = ({ navigation }: any) => {
             <View style={styles.blogFooter}>
               <View style={styles.dateContainer}>
                 <MaterialCommunityIcons name="calendar" size={14} color="#999" />
-                <Paragraph style={styles.dateText}>{item.publishDate}</Paragraph>
+                <Paragraph style={styles.dateText}>{formatDate(item.publishDate)}</Paragraph>
               </View>
               <TouchableOpacity style={styles.readMoreButton}>
                 <Paragraph style={styles.readMoreText}>Read More</Paragraph>

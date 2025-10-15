@@ -5,7 +5,7 @@ import { getDoctorById } from '../api/services';
 import { Doctor } from '../types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const DoctorDetailScreen = ({ route }: any) => {
+const DoctorDetailScreen = ({ route, navigation }: any) => {
   const { doctorId } = route.params;
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +23,13 @@ const DoctorDetailScreen = ({ route }: any) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBookAppointment = () => {
+    navigation.navigate('BookAppointment', { 
+      doctorId: doctor?.id,
+      patientId: 'current-user' // You can replace this with actual patient ID from auth context
+    });
   };
 
   if (loading) {
@@ -113,7 +120,12 @@ const DoctorDetailScreen = ({ route }: any) => {
             </Chip>
           </View>
 
-          <Button mode="contained" style={styles.button} icon="calendar">
+          <Button 
+            mode="contained" 
+            style={styles.button} 
+            icon="calendar"
+            onPress={handleBookAppointment}
+          >
             Book Appointment
           </Button>
         </Card.Content>

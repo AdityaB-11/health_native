@@ -108,10 +108,17 @@ const LoginScreen = () => {
                 </View>
               </View>
               <View style={styles.demoItem}>
-                <IconButton icon="account" size={24} iconColor="#03a9f4" />
+                <IconButton icon="doctor" size={24} iconColor="#2196F3" />
                 <View style={styles.demoInfo}>
-                  <Text style={styles.demoRole}>User Access</Text>
-                  <Text style={styles.demoEmail}>user@health.com</Text>
+                  <Text style={styles.demoRole}>Doctor Access</Text>
+                  <Text style={styles.demoEmail}>doctor@health.com</Text>
+                </View>
+              </View>
+              <View style={styles.demoItem}>
+                <IconButton icon="account" size={24} iconColor="#4CAF50" />
+                <View style={styles.demoInfo}>
+                  <Text style={styles.demoRole}>Patient Access</Text>
+                  <Text style={styles.demoEmail}>patient@health.com</Text>
                 </View>
               </View>
               <Text style={styles.demoPassword}>Password: password</Text>

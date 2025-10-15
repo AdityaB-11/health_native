@@ -5,13 +5,14 @@ import { getMedicines } from '../api/services';
 import { Medicine } from '../types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useCart } from '../context/CartContext';
 
 const MedicineListScreen = ({ navigation }: any) => {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [filteredMedicines, setFilteredMedicines] = useState<Medicine[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<{[key: string]: number}>({});
+  const { state, addToCart, updateQuantity, getItemQuantity } = useCart();
 
   useEffect(() => {
     fetchMedicines();
@@ -44,38 +45,21 @@ const MedicineListScreen = ({ navigation }: any) => {
     }
   };
 
-  const addToCart = (medicineId: string) => {
-    setCart(prev => ({
-      ...prev,
-      [medicineId]: (prev[medicineId] || 0) + 1
-    }));
+  const handleAddToCart = (medicine: Medicine) => {
+    addToCart(medicine, 1);
   };
 
-  const removeFromCart = (medicineId: string) => {
-    setCart(prev => {
-      const newCart = {...prev};
-      if (newCart[medicineId] > 1) {
-        newCart[medicineId]--;
-      } else {
-        delete newCart[medicineId];
-      }
-      return newCart;
-    });
-  };
-
-  const getTotalItems = () => {
-    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-  };
-
-  const getTotalPrice = () => {
-    return Object.entries(cart).reduce((sum, [id, qty]) => {
-      const medicine = medicines.find(m => m.id === id);
-      return sum + (medicine?.price || 0) * qty;
-    }, 0);
+  const handleRemoveFromCart = (medicine: Medicine) => {
+    const currentQuantity = getItemQuantity(medicine.id);
+    if (currentQuantity > 1) {
+      updateQuantity(medicine.id, currentQuantity - 1);
+    } else {
+      updateQuantity(medicine.id, 0); // This will remove the item
+    }
   };
 
   const renderMedicine = ({ item }: { item: Medicine }) => {
-    const quantity = cart[item.id] || 0;
+    const quantity = getItemQuantity(item.id);
     
     return (
       <TouchableOpacity
@@ -135,7 +119,7 @@ const MedicineListScreen = ({ navigation }: any) => {
                       size={16}
                       iconColor="#fff"
                       style={styles.cartButton}
-                      onPress={() => removeFromCart(item.id)}
+                      onPress={() => handleRemoveFromCart(item)}
                     />
                     <Paragraph style={styles.cartQuantity}>{quantity}</Paragraph>
                     <IconButton
@@ -143,14 +127,14 @@ const MedicineListScreen = ({ navigation }: any) => {
                       size={16}
                       iconColor="#fff"
                       style={styles.cartButton}
-                      onPress={() => addToCart(item.id)}
+                      onPress={() => handleAddToCart(item)}
                     />
                   </View>
                 ) : (
                   <Button
                     mode="contained"
                     icon="cart-plus"
-                    onPress={() => addToCart(item.id)}
+                    onPress={() => handleAddToCart(item)}
                     style={styles.addToCartButton}
                     labelStyle={styles.addToCartLabel}
                     buttonColor="#FF9800"
@@ -174,8 +158,6 @@ const MedicineListScreen = ({ navigation }: any) => {
     );
   }
 
-  const totalItems = getTotalItems();
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#FF9800" />
@@ -190,10 +172,13 @@ const MedicineListScreen = ({ navigation }: any) => {
               {filteredMedicines.length} products available
             </Paragraph>
           </View>
-          <TouchableOpacity style={styles.cartIcon}>
+          <TouchableOpacity 
+            style={styles.cartIcon} 
+            onPress={() => navigation.navigate('Cart')}
+          >
             <MaterialCommunityIcons name="cart" size={28} color="#fff" />
-            {totalItems > 0 && (
-              <Badge style={styles.cartBadge}>{totalItems}</Badge>
+            {state.itemCount > 0 && (
+              <Badge style={styles.cartBadge}>{state.itemCount}</Badge>
             )}
           </TouchableOpacity>
         </View>
@@ -219,12 +204,12 @@ const MedicineListScreen = ({ navigation }: any) => {
         ListHeaderComponent={<View style={styles.listHeader} />}
       />
 
-      {totalItems > 0 && (
+      {state.itemCount > 0 && (
         <Surface style={styles.cartSummary} elevation={5}>
           <View style={styles.cartSummaryContent}>
             <View>
-              <Paragraph style={styles.cartSummaryLabel}>Total ({totalItems} items)</Paragraph>
-              <Title style={styles.cartSummaryPrice}>₹{getTotalPrice().toFixed(2)}</Title>
+              <Paragraph style={styles.cartSummaryLabel}>Total ({state.itemCount} items)</Paragraph>
+              <Title style={styles.cartSummaryPrice}>₹{state.total.toFixed(2)}</Title>
             </View>
             <Button
               mode="contained"
@@ -232,6 +217,7 @@ const MedicineListScreen = ({ navigation }: any) => {
               style={styles.checkoutButton}
               labelStyle={styles.checkoutLabel}
               buttonColor="#4CAF50"
+              onPress={() => navigation.navigate('Cart')}
             >
               Checkout
             </Button>

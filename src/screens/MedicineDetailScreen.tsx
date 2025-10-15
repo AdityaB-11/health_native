@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Card, Title, Paragraph, Divider, Chip, ActivityIndicator } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Card, Title, Paragraph, Divider, Chip, ActivityIndicator, Button, IconButton, Surface } from 'react-native-paper';
 import { getMedicineById } from '../api/services';
 import { Medicine } from '../types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useCart } from '../context/CartContext';
 
-const MedicineDetailScreen = ({ route }: any) => {
+const MedicineDetailScreen = ({ route, navigation }: any) => {
   const { medicineId } = route.params;
   const [medicine, setMedicine] = useState<Medicine | null>(null);
   const [loading, setLoading] = useState(true);
+  const { addToCart, updateQuantity, getItemQuantity, removeFromCart } = useCart();
 
   useEffect(() => {
     fetchMedicine();
@@ -22,6 +24,33 @@ const MedicineDetailScreen = ({ route }: any) => {
       console.error('Error fetching medicine:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddToCart = () => {
+    if (medicine) {
+      addToCart(medicine, 1);
+      Alert.alert(
+        'Added to Cart', 
+        `${medicine.name} has been added to your cart`,
+        [
+          { text: 'Continue Shopping', style: 'default' },
+          { text: 'View Cart', onPress: () => navigation.navigate('Cart') },
+        ]
+      );
+    }
+  };
+
+  const handleUpdateQuantity = (change: number) => {
+    if (!medicine) return;
+    
+    const currentQuantity = getItemQuantity(medicine.id);
+    const newQuantity = currentQuantity + change;
+    
+    if (newQuantity <= 0) {
+      removeFromCart(medicine.id);
+    } else {
+      updateQuantity(medicine.id, newQuantity);
     }
   };
 
@@ -42,8 +71,9 @@ const MedicineDetailScreen = ({ route }: any) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Card style={styles.card}>
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <Card style={styles.card}>
         <Card.Content>
           <Title style={styles.name}>{medicine.name}</Title>
           <Paragraph style={styles.generic}>{medicine.genericName}</Paragraph>
@@ -107,7 +137,72 @@ const MedicineDetailScreen = ({ route }: any) => {
           </View>
         </Card.Content>
       </Card>
-    </ScrollView>
+      </ScrollView>
+
+      {/* Cart Actions */}
+      <Surface style={styles.cartActionsContainer} elevation={5}>
+        <View style={styles.cartActions}>
+          <View style={styles.priceSection}>
+            <Title style={styles.price}>₹{medicine.price}</Title>
+            <Paragraph style={styles.priceLabel}>per unit</Paragraph>
+          </View>
+          
+          {!medicine.inStock ? (
+            <Button 
+              mode="contained" 
+              disabled 
+              style={styles.outOfStockButton}
+              icon="close-circle"
+            >
+              Out of Stock
+            </Button>
+          ) : (
+            <View style={styles.cartButtonsContainer}>
+              {getItemQuantity(medicine.id) > 0 ? (
+                <View style={styles.quantityControls}>
+                  <IconButton
+                    icon="minus"
+                    mode="contained"
+                    size={20}
+                    onPress={() => handleUpdateQuantity(-1)}
+                    style={styles.quantityButton}
+                  />
+                  <Title style={styles.quantityText}>
+                    {getItemQuantity(medicine.id)}
+                  </Title>
+                  <IconButton
+                    icon="plus"
+                    mode="contained"
+                    size={20}
+                    onPress={() => handleUpdateQuantity(1)}
+                    style={styles.quantityButton}
+                  />
+                </View>
+              ) : (
+                <Button
+                  mode="contained"
+                  icon="cart-plus"
+                  onPress={handleAddToCart}
+                  style={styles.addToCartButton}
+                  buttonColor="#FF9800"
+                >
+                  Add to Cart
+                </Button>
+              )}
+              
+              <Button
+                mode="outlined"
+                icon="cart-arrow-right"
+                onPress={() => navigation.navigate('Cart')}
+                style={styles.viewCartButton}
+              >
+                View Cart
+              </Button>
+            </View>
+          )}
+        </View>
+      </Surface>
+    </View>
   );
 };
 
@@ -120,6 +215,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 120, // Space for floating cart actions
   },
   card: {
     margin: 16,
@@ -177,6 +278,60 @@ const styles = StyleSheet.create({
   listText: {
     marginLeft: 8,
     flex: 1,
+  },
+  cartActionsContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  cartActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+  },
+  priceSection: {
+    flex: 1,
+  },
+  price: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF9800',
+  },
+  priceLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  cartButtonsContainer: {
+    flex: 2,
+    marginLeft: 16,
+  },
+  quantityControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  quantityButton: {
+    backgroundColor: '#FF9800',
+  },
+  quantityText: {
+    marginHorizontal: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  addToCartButton: {
+    marginBottom: 8,
+  },
+  viewCartButton: {
+    borderColor: '#FF9800',
+  },
+  outOfStockButton: {
+    backgroundColor: '#ccc',
   },
 });
 

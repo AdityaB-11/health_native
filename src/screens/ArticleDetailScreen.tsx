@@ -5,6 +5,7 @@ import { getArticleById } from '../api/services';
 import { Article } from '../types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { formatDate } from '../utils/dateUtils';
 
 const ArticleDetailScreen = ({ route }: any) => {
   const { articleId } = route.params;
@@ -88,7 +89,7 @@ const ArticleDetailScreen = ({ route }: any) => {
               <Paragraph style={styles.authorName}>{article.author}</Paragraph>
               <View style={styles.metaRow}>
                 <MaterialCommunityIcons name="calendar" size={14} color="#999" />
-                <Paragraph style={styles.metaText}>{article.publishDate}</Paragraph>
+                <Paragraph style={styles.metaText}>{formatDate(article.publishDate)}</Paragraph>
                 <MaterialCommunityIcons name="clock-outline" size={14} color="#999" style={styles.metaIcon} />
                 <Paragraph style={styles.metaText}>{article.readTime} min read</Paragraph>
               </View>

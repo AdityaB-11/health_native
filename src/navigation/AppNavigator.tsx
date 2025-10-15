@@ -21,6 +21,8 @@ import ArticleListScreen from '../screens/ArticleListScreen';
 import ArticleDetailScreen from '../screens/ArticleDetailScreen';
 import LabReportsScreen from '../screens/LabReportsScreen';
 import UploadReportScreen from '../screens/UploadReportScreen';
+import BookAppointmentScreen from '../screens/BookAppointmentScreen';
+import CartScreen from '../screens/CartScreen';
 
 // Admin Screens
 import AdminScreen from '../screens/AdminScreen';
@@ -28,12 +30,71 @@ import AddDoctorScreen from '../screens/AddDoctorScreen';
 import AddMedicineScreen from '../screens/AddMedicineScreen';
 import AddArticleScreen from '../screens/AddArticleScreen';
 
+// Doctor Screens
+import DoctorDashboardScreen from '../screens/DoctorDashboardScreen';
+import DoctorPatientsScreen from '../screens/DoctorPatientsScreen';
+import DoctorAppointmentsScreen from '../screens/DoctorAppointmentsScreen';
+import DoctorPatientDetailScreen from '../screens/DoctorPatientDetailScreen';
+
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const MainTabs = () => {
   const { user } = useAuth();
   
+  // Doctor gets a different tab layout
+  if (user?.role === 'doctor') {
+    return (
+      <Tab.Navigator
+        screenOptions={{
+          tabBarActiveTintColor: '#2196F3',
+          tabBarInactiveTintColor: 'gray',
+        }}
+      >
+        <Tab.Screen
+          name="Dashboard"
+          component={DoctorDashboardScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="view-dashboard" color={color} size={size} />
+            ),
+            headerShown: false,
+          }}
+        />
+        <Tab.Screen
+          name="Appointments"
+          component={DoctorAppointmentsScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="calendar-month" color={color} size={size} />
+            ),
+            headerShown: false,
+          }}
+        />
+        <Tab.Screen
+          name="Patients"
+          component={DoctorPatientsScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="account-multiple" color={color} size={size} />
+            ),
+            headerShown: false,
+          }}
+        />
+        <Tab.Screen
+          name="Articles"
+          component={ArticleListScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="newspaper" color={color} size={size} />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+    );
+  }
+  
+  // Admin and Patient get the original tabs
   return (
     <Tab.Navigator
       screenOptions={{
@@ -60,7 +121,7 @@ const MainTabs = () => {
         }}
       />
       <Tab.Screen
-        name="Medicines"
+        name="Medicine"
         component={MedicineListScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
@@ -126,9 +187,44 @@ const AppNavigator = () => {
             <Stack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
             <Stack.Screen name="LabReports" component={LabReportsScreen} />
             <Stack.Screen name="UploadReport" component={UploadReportScreen} />
+            <Stack.Screen 
+              name="BookAppointment" 
+              component={BookAppointmentScreen} 
+              options={{ title: 'Book Appointment' }}
+            />
+            <Stack.Screen 
+              name="Cart" 
+              component={CartScreen} 
+              options={{ title: 'Shopping Cart' }}
+            />
             <Stack.Screen name="AddDoctor" component={AddDoctorScreen} />
             <Stack.Screen name="AddMedicine" component={AddMedicineScreen} />
             <Stack.Screen name="AddArticle" component={AddArticleScreen} />
+            <Stack.Screen 
+              name="DoctorAppointments" 
+              component={DoctorAppointmentsScreen}
+              options={{ title: 'Appointments' }}
+            />
+            <Stack.Screen 
+              name="DoctorPatients" 
+              component={DoctorPatientsScreen}
+              options={{ title: 'My Patients' }}
+            />
+            <Stack.Screen 
+              name="DoctorPatientDetail" 
+              component={DoctorPatientDetailScreen}
+              options={{ title: 'Patient Details' }}
+            />
+            <Stack.Screen 
+              name="DoctorReports" 
+              component={LabReportsScreen}
+              options={{ title: 'Lab Reports' }}
+            />
+            <Stack.Screen 
+              name="DoctorProfile" 
+              component={DoctorDetailScreen}
+              options={{ title: 'My Profile' }}
+            />
           </>
         )}
       </Stack.Navigator>

@@ -4,6 +4,7 @@ import { Card, Title, Paragraph, Button, Chip, FAB, ActivityIndicator } from 're
 import { getLabReports } from '../api/services';
 import { LabReport } from '../types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { formatDate } from '../utils/dateUtils';
 
 const LabReportsScreen = ({ route, navigation }: any) => {
   const { patientId } = route.params || {};
@@ -39,7 +40,7 @@ const LabReportsScreen = ({ route, navigation }: any) => {
             <Paragraph>{item.patientName}</Paragraph>
           </View>
         </View>
-        <Paragraph style={styles.date}>Date: {item.date}</Paragraph>
+        <Paragraph style={styles.date}>Date: {formatDate(item.date)}</Paragraph>
         <Paragraph style={styles.fileName}>File: {item.fileName}</Paragraph>
         {item.notes && (
           <Paragraph style={styles.notes}>Notes: {item.notes}</Paragraph>

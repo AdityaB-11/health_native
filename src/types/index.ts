@@ -4,6 +4,7 @@ export interface User {
   name: string;
   role: 'admin' | 'doctor' | 'patient';
   token?: string;
+  doctorId?: string; // Link to doctor profile if role is 'doctor'
 }
 
 export interface Doctor {
@@ -75,4 +76,23 @@ export interface Article {
   readTime: number;
   tags: string[];
   externalUrl?: string; // Optional link to full article
+}
+
+export interface Appointment {
+  id: string;
+  doctorId: string;
+  doctorName: string;
+  patientId: string;
+  patientName: string;
+  patientAge: number;
+  patientGender: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'in-progress';
+  type: 'consultation' | 'follow-up' | 'emergency';
+  symptoms: string;
+  diagnosis?: string;
+  prescription?: string;
+  notes?: string;
+  createdAt: string;
 }
