@@ -219,7 +219,8 @@ const styles = StyleSheet.create({
   specializationChip: {
     alignSelf: 'flex-start',
     backgroundColor: '#E3F2FD',
-    height: 28,
+    minHeight: 28,
+    maxHeight: 40,
   },
   chipText: {
     fontSize: 12,

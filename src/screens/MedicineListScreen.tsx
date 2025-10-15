@@ -387,18 +387,18 @@ const styles = StyleSheet.create({
     gap: 3,
     alignItems: 'flex-end',
     flexShrink: 0,
-    minWidth: 65,
+    minWidth: 70,
+    maxWidth: 85,
   },
   metaChip: {
-    height: 20,
+    minHeight: 20,
+    maxHeight: 32,
     backgroundColor: '#F5F5F5',
-    maxWidth: 70,
   },
   metaChipText: {
     fontSize: 8,
     color: '#666',
     lineHeight: 10,
-    flexWrap: 'wrap',
   },
   productFooter: {
     flexDirection: 'row',
