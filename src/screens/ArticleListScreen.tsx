@@ -31,11 +31,14 @@ const ArticleListScreen = ({ navigation }: any) => {
 
   const fetchArticles = async () => {
     try {
+      console.log('📰 Fetching articles...');
       const data = await getArticles();
+      console.log('📰 Articles fetched:', data.length);
+      console.log('📰 Articles data:', data.map(a => a.title));
       setArticles(data);
       setFilteredArticles(data);
     } catch (error) {
-      console.error('Error fetching articles:', error);
+      console.error('❌ Error fetching articles:', error);
     } finally {
       setLoading(false);
     }
@@ -195,6 +198,20 @@ const ArticleListScreen = ({ navigation }: any) => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <MaterialCommunityIcons name="newspaper-variant-outline" size={64} color="#ccc" />
+            <Title style={styles.emptyTitle}>No Articles Found</Title>
+            <Paragraph style={styles.emptyText}>
+              {searchQuery || selectedCategory !== 'All' 
+                ? 'Try adjusting your search or filters' 
+                : 'No articles available at the moment'}
+            </Paragraph>
+            <Paragraph style={styles.debugText}>
+              Total articles: {articles.length}, Filtered: {filteredArticles.length}
+            </Paragraph>
+          </View>
+        )}
       />
     </View>
   );
@@ -365,6 +382,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginRight: 4,
     margin: 0,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    marginTop: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  emptyText: {
+    marginTop: 8,
+    color: '#999',
+    textAlign: 'center',
+  },
+  debugText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#FF9800',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

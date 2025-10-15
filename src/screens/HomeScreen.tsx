@@ -11,7 +11,7 @@ const HomeScreen = ({ navigation }: any) => {
   const allFeatures = [
     { title: 'Doctors', icon: 'doctor' as const, screen: 'Doctors', color: '#2196F3', gradient: ['#2196F3', '#1976D2'] as const, adminOnly: false },
     { title: 'Patients', icon: 'account-group' as const, screen: 'PatientList', color: '#4CAF50', gradient: ['#4CAF50', '#388E3C'] as const, adminOnly: true },
-    { title: 'Medicines', icon: 'pill' as const, screen: 'Medicines', color: '#FF9800', gradient: ['#FF9800', '#F57C00'] as const, adminOnly: false },
+    { title: 'Medicines', icon: 'pill' as const, screen: 'Medicine', color: '#FF9800', gradient: ['#FF9800', '#F57C00'] as const, adminOnly: false },
     { title: 'Lab Reports', icon: 'file-document' as const, screen: 'LabReports', color: '#9C27B0', gradient: ['#9C27B0', '#7B1FA2'] as const, adminOnly: false },
     { title: 'Articles', icon: 'newspaper' as const, screen: 'Articles', color: '#F44336', gradient: ['#F44336', '#D32F2F'] as const, adminOnly: false },
   ];

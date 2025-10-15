@@ -19,7 +19,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase services
+// Initialize Firebase Auth - Expo handles persistence automatically
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);

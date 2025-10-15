@@ -138,6 +138,18 @@ const MainTabs = () => {
           ),
         }}
       />
+      {user?.role === 'patient' && (
+        <Tab.Screen
+          name="Reports"
+          component={LabReportsScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="file-document" color={color} size={size} />
+            ),
+            title: 'My Reports'
+          }}
+        />
+      )}
       {user?.role === 'admin' && (
         <Tab.Screen
           name="Admin"

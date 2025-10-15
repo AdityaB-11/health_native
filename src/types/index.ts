@@ -5,6 +5,7 @@ export interface User {
   role: 'admin' | 'doctor' | 'patient';
   token?: string;
   doctorId?: string; // Link to doctor profile if role is 'doctor'
+  patientId?: string; // Link to patient profile if role is 'patient'
 }
 
 export interface Doctor {

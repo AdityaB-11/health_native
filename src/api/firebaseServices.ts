@@ -143,12 +143,19 @@ export const deleteMedicine = async (id: string): Promise<void> => {
 
 export const getArticles = async (): Promise<Article[]> => {
   try {
-    const q = query(collection(db, 'articles'), orderBy('publishedDate', 'desc'));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    // Remove orderBy to avoid index issues, sort in JavaScript instead
+    const querySnapshot = await getDocs(collection(db, 'articles'));
+    const articles = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     })) as Article[];
+    
+    // Sort by publishDate in JavaScript (newest first)
+    return articles.sort((a, b) => {
+      const dateA = new Date(a.publishDate);
+      const dateB = new Date(b.publishDate);
+      return dateB.getTime() - dateA.getTime();
+    });
   } catch (error) {
     console.error('Error fetching articles:', error);
     throw error;

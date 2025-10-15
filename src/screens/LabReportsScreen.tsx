@@ -5,9 +5,11 @@ import { getLabReports } from '../api/services';
 import { LabReport } from '../types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { formatDate } from '../utils/dateUtils';
+import { useAuth } from '../context/AuthContext';
 
 const LabReportsScreen = ({ route, navigation }: any) => {
   const { patientId } = route.params || {};
+  const { user } = useAuth();
   const [reports, setReports] = useState<LabReport[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,8 +19,30 @@ const LabReportsScreen = ({ route, navigation }: any) => {
 
   const fetchReports = async () => {
     try {
-      const data = await getLabReports(patientId);
-      setReports(data);
+      // If user is a patient, only show their own reports
+      // For patients, we can use either patientId or patientName to filter
+      let filterPatientId = patientId;
+      
+      if (user?.role === 'patient') {
+        // Use the user's linked patientId if available, otherwise fall back to name matching
+        filterPatientId = user.patientId || user.name;
+      }
+      
+      const data = await getLabReports(filterPatientId);
+      
+      // Additional filtering for patients to ensure they only see their own reports
+      if (user?.role === 'patient') {
+        const filteredReports = data.filter(report => {
+          // Match by patientId if available, otherwise by name
+          if (user.patientId) {
+            return report.patientId === user.patientId;
+          }
+          return report.patientName.toLowerCase() === user.name.toLowerCase();
+        });
+        setReports(filteredReports);
+      } else {
+        setReports(data);
+      }
     } catch (error) {
       console.error('Error fetching reports:', error);
     } finally {
