@@ -34,6 +34,17 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
 
       setPatient(patientData);
       
+      // Debug patient data structure
+      console.log('🔍 Patient data loaded:', {
+        name: patientData?.name,
+        allergies: patientData?.allergies,
+        allergiesType: typeof patientData?.allergies,
+        medicalHistory: patientData?.medicalHistory,
+        medicalHistoryType: typeof patientData?.medicalHistory,
+        currentMedications: patientData?.currentMedications,
+        currentMedicationsType: typeof patientData?.currentMedications
+      });
+      
       // Filter appointments for this doctor only
       const doctorAppointments = appointmentsData.filter(apt => apt.doctorId === user.doctorId);
       setAppointments(doctorAppointments);
@@ -50,6 +61,17 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
   const onRefresh = () => {
     setRefreshing(true);
     loadPatientData();
+  };
+
+  // Helper function to safely convert data to array
+  const safeArrayFromData = (data: any): string[] => {
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (typeof data === 'string' && data.trim()) {
+      return data.split(',').map(item => item.trim()).filter(item => item.length > 0);
+    }
+    return [];
   };
 
   const getStatusColor = (status: string) => {
@@ -130,7 +152,7 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
         </Card>
 
         {/* Medical Alerts */}
-        {(patient.allergies || []).length > 0 && (
+        {safeArrayFromData(patient.allergies).length > 0 && (
           <Card style={[styles.card, styles.alertCard]}>
             <Card.Title
               title="Allergies"
@@ -139,7 +161,7 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
             />
             <Card.Content>
               <View style={styles.chipsContainer}>
-                {(patient.allergies || []).map((allergy, index) => (
+                {safeArrayFromData(patient.allergies).map((allergy, index) => (
                   <Chip
                     key={index}
                     icon="alert"
@@ -155,14 +177,14 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
         )}
 
         {/* Current Medications */}
-        {(patient.currentMedications || []).length > 0 && (
+        {safeArrayFromData(patient.currentMedications).length > 0 && (
           <Card style={styles.card}>
             <Card.Title
               title="Current Medications"
               left={(props) => <MaterialCommunityIcons name="pill" {...props} color="#FF9800" />}
             />
             <Card.Content>
-              {(patient.currentMedications || []).map((medication, index) => (
+              {safeArrayFromData(patient.currentMedications).map((medication, index) => (
                 <View key={index} style={styles.medicationRow}>
                   <MaterialCommunityIcons name="checkbox-marked-circle" size={20} color="#4CAF50" />
                   <Text style={styles.medicationText}>{medication}</Text>
@@ -173,14 +195,14 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
         )}
 
         {/* Medical History */}
-        {(patient.medicalHistory || []).length > 0 && (
+        {safeArrayFromData(patient.medicalHistory).length > 0 && (
           <Card style={styles.card}>
             <Card.Title
               title="Medical History"
               left={(props) => <MaterialCommunityIcons name="file-document" {...props} color="#9C27B0" />}
             />
             <Card.Content>
-              {(patient.medicalHistory || []).map((history, index) => (
+              {safeArrayFromData(patient.medicalHistory).map((history, index) => (
                 <View key={index} style={styles.historyRow}>
                   <MaterialCommunityIcons name="circle-medium" size={20} color="#9C27B0" />
                   <Text style={styles.historyText}>{history}</Text>
