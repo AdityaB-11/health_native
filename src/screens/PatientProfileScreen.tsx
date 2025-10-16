@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Card, Title, Paragraph, Avatar, Divider, Chip, ActivityIndicator, Button } from 'react-native-paper';
-import { getPatientById } from '../api/services';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, StyleSheet } from 'react-native';
+import { Card, Title, Paragraph, Divider, Chip, ActivityIndicator, Button } from 'react-native-paper';
+import { View } from 'react-native';
+import { getPatientById } from '../api/firebaseServices';
 import { Patient } from '../types';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const PatientProfileScreen = ({ route, navigation }: any) => {
   const { patientId } = route.params;
@@ -11,15 +11,15 @@ const PatientProfileScreen = ({ route, navigation }: any) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchPatient();
-  }, []);
+    loadPatient();
+  }, [patientId]);
 
-  const fetchPatient = async () => {
+  const loadPatient = async () => {
     try {
-      const data = await getPatientById(patientId);
-      setPatient(data);
+      const patientData = await getPatientById(patientId);
+      setPatient(patientData);
     } catch (error) {
-      console.error('Error fetching patient:', error);
+      console.error('Error loading patient:', error);
     } finally {
       setLoading(false);
     }
@@ -27,16 +27,16 @@ const PatientProfileScreen = ({ route, navigation }: any) => {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#6200ee" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
   if (!patient) {
     return (
-      <View style={styles.centerContainer}>
-        <Paragraph>Patient not found</Paragraph>
+      <View style={styles.container}>
+        <Title>Patient not found</Title>
       </View>
     );
   }
@@ -46,84 +46,28 @@ const PatientProfileScreen = ({ route, navigation }: any) => {
       <Card style={styles.card}>
         <Card.Content>
           <Title style={styles.name}>{patient.name}</Title>
-          
-          <View style={styles.chipContainer}>
-            <Chip icon="calendar" style={styles.chip}>
-              {patient.age} years
-            </Chip>
-            <Chip icon="gender-male-female" style={styles.chip}>
-              {patient.gender}
-            </Chip>
-            <Chip icon="water" style={styles.chip}>
-              {patient.bloodGroup}
-            </Chip>
-          </View>
-
-          <Divider style={styles.divider} />
-
-          <View style={styles.section}>
-            <View style={styles.row}>
-              <MaterialCommunityIcons name="phone" size={20} color="#666" />
-              <Paragraph style={styles.label}>Phone:</Paragraph>
-            </View>
-            <Paragraph>{patient.phone}</Paragraph>
-          </View>
-
-          <View style={styles.section}>
-            <View style={styles.row}>
-              <MaterialCommunityIcons name="email" size={20} color="#666" />
-              <Paragraph style={styles.label}>Email:</Paragraph>
-            </View>
-            <Paragraph>{patient.email}</Paragraph>
-          </View>
-
-          <View style={styles.section}>
-            <View style={styles.row}>
-              <MaterialCommunityIcons name="home" size={20} color="#666" />
-              <Paragraph style={styles.label}>Address:</Paragraph>
-            </View>
-            <Paragraph>{patient.address}</Paragraph>
-          </View>
+          <Paragraph style={styles.info}>Age: {patient.age}</Paragraph>
+          <Paragraph style={styles.info}>Gender: {patient.gender}</Paragraph>
+          <Paragraph style={styles.info}>Blood Group: {patient.bloodGroup}</Paragraph>
+          <Paragraph style={styles.info}>Phone: {patient.phone}</Paragraph>
+          <Paragraph style={styles.info}>Email: {patient.email}</Paragraph>
+          <Paragraph style={styles.info}>Address: {patient.address}</Paragraph>
 
           <Divider style={styles.divider} />
 
           <View style={styles.section}>
             <Title style={styles.sectionTitle}>Medical History</Title>
-            {patient.medicalHistory.length > 0 ? (
-              patient.medicalHistory.map((item, index) => (
-                <Chip key={index} style={styles.infoChip} icon="clipboard-text">
-                  {item}
-                </Chip>
-              ))
-            ) : (
-              <Paragraph>No medical history recorded</Paragraph>
-            )}
+            <Paragraph>Medical history information will be displayed here.</Paragraph>
           </View>
 
           <View style={styles.section}>
             <Title style={styles.sectionTitle}>Allergies</Title>
-            {patient.allergies.length > 0 ? (
-              patient.allergies.map((item, index) => (
-                <Chip key={index} style={styles.infoChip} icon="alert-circle">
-                  {item}
-                </Chip>
-              ))
-            ) : (
-              <Paragraph>No known allergies</Paragraph>
-            )}
+            <Paragraph>Allergy information will be displayed here.</Paragraph>
           </View>
 
           <View style={styles.section}>
             <Title style={styles.sectionTitle}>Current Medications</Title>
-            {patient.currentMedications.length > 0 ? (
-              patient.currentMedications.map((item, index) => (
-                <Chip key={index} style={styles.infoChip} icon="pill">
-                  {item}
-                </Chip>
-              ))
-            ) : (
-              <Paragraph>No current medications</Paragraph>
-            )}
+            <Paragraph>Current medications will be displayed here.</Paragraph>
           </View>
 
           <Button 
@@ -145,7 +89,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  centerContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -159,37 +103,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 8,
   },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginVertical: 8,
+  info: {
+    fontSize: 16,
+    marginBottom: 4,
   },
-  chip: {
-    marginRight: 8,
-    marginTop: 4,
+  section: {
+    marginVertical: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
   },
   divider: {
     marginVertical: 16,
   },
-  section: {
-    marginBottom: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  label: {
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    marginBottom: 8,
-  },
   infoChip: {
-    marginRight: 8,
-    marginTop: 8,
+    margin: 4,
   },
   button: {
     marginTop: 16,

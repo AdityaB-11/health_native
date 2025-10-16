@@ -25,13 +25,6 @@ const DoctorDetailScreen = ({ route, navigation }: any) => {
     }
   };
 
-  const handleBookAppointment = () => {
-    navigation.navigate('BookAppointment', { 
-      doctorId: doctor?.id,
-      patientId: 'current-user' // You can replace this with actual patient ID from auth context
-    });
-  };
-
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -120,11 +113,16 @@ const DoctorDetailScreen = ({ route, navigation }: any) => {
             </Chip>
           </View>
 
-          <Button 
-            mode="contained" 
-            style={styles.button} 
-            icon="calendar"
-            onPress={handleBookAppointment}
+          <Button
+            mode="contained"
+            style={styles.button}
+            icon="calendar-plus"
+            onPress={() => navigation.navigate('BookAppointment', { 
+              doctorId: doctor.id,
+              doctorName: doctor.name,
+              doctorSpecialization: doctor.specialization,
+              consultationFee: doctor.consultationFee 
+            })}
           >
             Book Appointment
           </Button>

@@ -37,6 +37,7 @@ import DoctorDashboardScreen from '../screens/DoctorDashboardScreen';
 import DoctorPatientsScreen from '../screens/DoctorPatientsScreen';
 import DoctorAppointmentsScreen from '../screens/DoctorAppointmentsScreen';
 import DoctorPatientDetailScreen from '../screens/DoctorPatientDetailScreen';
+import AppointmentDetailScreen from '../screens/AppointmentDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -211,7 +212,7 @@ const AppNavigator = () => {
   if (showLanding) {
     return (
       <NavigationContainer>
-        <Stack.Navigator id="LandingStack" screenOptions={{ headerShown: false }}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Landing">
             {() => <LandingScreen onContinue={handleLandingComplete} />}
           </Stack.Screen>
@@ -280,6 +281,11 @@ const AppNavigator = () => {
               name="DoctorProfile" 
               component={DoctorDetailScreen}
               options={{ title: 'My Profile' }}
+            />
+            <Stack.Screen 
+              name="AppointmentDetail" 
+              component={AppointmentDetailScreen}
+              options={{ title: 'Appointment Details' }}
             />
           </>
         )}

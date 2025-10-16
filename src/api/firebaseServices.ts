@@ -45,6 +45,22 @@ export const getDoctorById = async (id: string): Promise<Doctor | null> => {
   }
 };
 
+export const getDoctorByEmail = async (email: string): Promise<Doctor | null> => {
+  try {
+    const q = query(collection(db, 'doctors'), where('email', '==', email));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return { id: doc.id, ...doc.data() } as Doctor;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching doctor by email:', error);
+    throw error;
+  }
+};
+
 export const addDoctor = async (doctorData: Omit<Doctor, 'id'>): Promise<string> => {
   try {
     const docRef = await addDoc(collection(db, 'doctors'), {

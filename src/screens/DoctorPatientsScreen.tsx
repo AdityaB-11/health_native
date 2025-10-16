@@ -4,7 +4,7 @@ import { Text, Card, Surface, Searchbar, Avatar, ActivityIndicator, Chip } from 
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { getDoctorPatients, getAppointmentsByDoctor } from '../api/firebaseServices';
+import { getDoctorPatients, getAppointmentsByDoctor, getDoctorByEmail, getPatientById, getPatients } from '../api/firebaseServices';
 import { Patient, Appointment } from '../types';
 
 const DoctorPatientsScreen = ({ navigation }: any) => {
@@ -25,20 +25,98 @@ const DoctorPatientsScreen = ({ navigation }: any) => {
   }, [searchQuery, patients]);
 
   const loadPatients = async () => {
-    if (!user?.doctorId) return;
+    if (!user) {
+      console.log('❌ No user found');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
-      const [patientsData, appointmentsData] = await Promise.all([
-        getDoctorPatients(user.doctorId),
-        getAppointmentsByDoctor(user.doctorId),
+      let doctorId = user.doctorId;
+      
+      console.log('🔍 Loading patients for user:', { 
+        userId: user.id, 
+        userRole: user.role, 
+        userDoctorId: user.doctorId,
+        userEmail: user.email 
+      });
+
+      // If no doctorId, try to find doctor by email
+      if (!doctorId && user.email) {
+        console.log('🔍 No doctorId found, searching by email:', user.email);
+        const doctorProfile = await getDoctorByEmail(user.email);
+        if (doctorProfile) {
+          doctorId = doctorProfile.id;
+          console.log('✅ Found doctor profile by email:', doctorProfile.id);
+        }
+      }
+
+      if (!doctorId) {
+        console.log('❌ No doctorId found, cannot load patients');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('🔍 Loading data for doctorId:', doctorId);
+      
+      const [appointmentsData] = await Promise.all([
+        getAppointmentsByDoctor(doctorId),
       ]);
       
-      setPatients(patientsData);
+      console.log('📊 Appointments found:', appointmentsData.length);
+      console.log('📊 Appointment details:', appointmentsData.map(apt => ({ 
+        id: apt.id, 
+        doctorId: apt.doctorId, 
+        patientId: apt.patientId, 
+        patientName: apt.patientName 
+      })));
+
+      // Get unique patient IDs from appointments
+      const patientIdsWithAppointments = [...new Set(appointmentsData.map(apt => apt.patientId))];
+      console.log('👥 Unique patient IDs:', patientIdsWithAppointments);
+
+      // Fetch patient details for each patient ID
+      const patientsWithAppointments: Patient[] = [];
+      for (const patientId of patientIdsWithAppointments) {
+        try {
+          const patient = await getPatientById(patientId);
+          if (patient) {
+            patientsWithAppointments.push(patient);
+            console.log('✅ Loaded patient:', patient.name);
+          } else {
+            console.log('❌ Patient not found for ID:', patientId);
+          }
+        } catch (error) {
+          console.log('❌ Error loading patient:', patientId, error);
+        }
+      }
+      
+      console.log('🎯 Final results:');
+      console.log('- Patients with appointments:', patientsWithAppointments.length);
+      
+      // If no patients with appointments found, show all patients for debugging
+      if (patientsWithAppointments.length === 0) {
+        console.log('⚠️ No patients with appointments found. Checking all patients for debugging...');
+        try {
+          const allPatients = await getPatients();
+          console.log('📊 All patients in system:', allPatients.length);
+          console.log('📊 All patients:', allPatients.map(p => ({ id: p.id, name: p.name, email: p.email })));
+          
+          // Temporarily show all patients so user can see what's available
+          setPatients(allPatients);
+          setFilteredPatients(allPatients);
+        } catch (error) {
+          console.log('❌ Error loading all patients:', error);
+        }
+      } else {
+        setPatients(patientsWithAppointments);
+        setFilteredPatients(patientsWithAppointments);
+      }
+      
       setAppointments(appointmentsData);
-      setFilteredPatients(patientsData);
     } catch (error) {
-      console.error('Error loading patients:', error);
+      console.error('❌ Error loading patients:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -67,15 +145,37 @@ const DoctorPatientsScreen = ({ navigation }: any) => {
   };
 
   const getPatientAppointmentCount = (patientId: string) => {
-    return appointments.filter(apt => apt.patientId === patientId).length;
+    return (appointments || []).filter(apt => apt.patientId === patientId).length;
   };
 
   const getLastAppointment = (patientId: string) => {
-    const patientAppointments = appointments
+    const patientAppointments = (appointments || [])
       .filter(apt => apt.patientId === patientId)
       .sort((a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime());
     
     return patientAppointments[0];
+  };
+
+  const getNextAppointment = (patientId: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const futureAppointments = (appointments || [])
+      .filter(apt => 
+        apt.patientId === patientId && 
+        new Date(apt.appointmentDate) >= today &&
+        apt.status === 'scheduled'
+      )
+      .sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime());
+    
+    return futureAppointments[0];
+  };
+
+  const getCompletedAppointments = (patientId: string) => {
+    return (appointments || []).filter(apt => 
+      apt.patientId === patientId && 
+      apt.status === 'completed'
+    ).length;
   };
 
   if (loading) {
@@ -95,7 +195,7 @@ const DoctorPatientsScreen = ({ navigation }: any) => {
       >
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>My Patients</Text>
-          <Text style={styles.headerSubtitle}>{patients.length} Total Patients</Text>
+          <Text style={styles.headerSubtitle}>{(filteredPatients || []).length} patients with appointments</Text>
         </View>
       </LinearGradient>
 
@@ -116,7 +216,7 @@ const DoctorPatientsScreen = ({ navigation }: any) => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {filteredPatients.length === 0 ? (
+        {(filteredPatients || []).length === 0 ? (
           <Surface style={styles.emptyCard}>
             <MaterialCommunityIcons name="account-search" size={64} color="#ccc" />
             <Text style={styles.emptyText}>
@@ -127,6 +227,8 @@ const DoctorPatientsScreen = ({ navigation }: any) => {
           filteredPatients.map((patient) => {
             const appointmentCount = getPatientAppointmentCount(patient.id);
             const lastAppointment = getLastAppointment(patient.id);
+            const nextAppointment = getNextAppointment(patient.id);
+            const completedCount = getCompletedAppointments(patient.id);
 
             return (
               <TouchableOpacity
@@ -157,42 +259,66 @@ const DoctorPatientsScreen = ({ navigation }: any) => {
                       </View>
                     </View>
 
-                    {/* Appointment Stats */}
+                    {/* Enhanced Appointment Stats */}
                     <View style={styles.statsRow}>
                       <Surface style={styles.statBadge}>
                         <MaterialCommunityIcons name="calendar-multiple" size={18} color="#4CAF50" />
-                        <Text style={styles.statText}>{appointmentCount} visits</Text>
+                        <Text style={styles.statText}>{appointmentCount} total</Text>
                       </Surface>
                       
+                      <Surface style={styles.statBadge}>
+                        <MaterialCommunityIcons name="check-circle" size={18} color="#4CAF50" />
+                        <Text style={styles.statText}>{completedCount} completed</Text>
+                      </Surface>
+                    </View>
+
+                    {/* Latest Appointment Info */}
+                    <View style={styles.appointmentInfo}>
                       {lastAppointment && (
-                        <Surface style={styles.statBadge}>
-                          <MaterialCommunityIcons name="clock-outline" size={18} color="#FF9800" />
-                          <Text style={styles.statText}>
-                            Last: {new Date(lastAppointment.appointmentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        <View style={styles.appointmentRow}>
+                          <MaterialCommunityIcons name="clock-outline" size={16} color="#FF9800" />
+                          <Text style={styles.appointmentText}>
+                            Last visit: {new Date(lastAppointment.appointmentDate).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
                           </Text>
-                        </Surface>
+                        </View>
+                      )}
+                      
+                      {nextAppointment && (
+                        <View style={styles.appointmentRow}>
+                          <MaterialCommunityIcons name="calendar-clock" size={16} color="#2196F3" />
+                          <Text style={styles.appointmentText}>
+                            Next: {new Date(nextAppointment.appointmentDate).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric'
+                            })} at {nextAppointment.appointmentTime}
+                          </Text>
+                        </View>
                       )}
                     </View>
 
                     {/* Medical Highlights */}
-                    {(patient.allergies.length > 0 || patient.medicalHistory.length > 0) && (
+                    {((patient.allergies || []).length > 0 || (patient.medicalHistory || []).length > 0) && (
                       <View style={styles.medicalInfo}>
-                        {patient.allergies.length > 0 && (
+                        {(patient.allergies || []).length > 0 && (
                           <View style={styles.allergyContainer}>
                             <MaterialCommunityIcons name="alert-circle" size={16} color="#F44336" />
                             <Text style={styles.allergyText}>
-                              Allergies: {patient.allergies.slice(0, 2).join(', ')}
-                              {patient.allergies.length > 2 && ` +${patient.allergies.length - 2}`}
+                              Allergies: {(patient.allergies || []).slice(0, 2).join(', ')}
+                              {(patient.allergies || []).length > 2 && ` +${(patient.allergies || []).length - 2}`}
                             </Text>
                           </View>
                         )}
                         
-                        {patient.medicalHistory.length > 0 && (
+                        {(patient.medicalHistory || []).length > 0 && (
                           <View style={styles.historyContainer}>
                             <MaterialCommunityIcons name="file-document" size={16} color="#2196F3" />
                             <Text style={styles.historyText} numberOfLines={1}>
-                              {patient.medicalHistory[0]}
-                              {patient.medicalHistory.length > 1 && ` +${patient.medicalHistory.length - 1} more`}
+                              {(patient.medicalHistory || [])[0]}
+                              {(patient.medicalHistory || []).length > 1 && ` +${(patient.medicalHistory || []).length - 1} more`}
                             </Text>
                           </View>
                         )}
@@ -365,6 +491,19 @@ const styles = StyleSheet.create({
     right: 16,
     top: '50%',
     marginTop: -12,
+  },
+  appointmentInfo: {
+    gap: 6,
+    paddingTop: 8,
+  },
+  appointmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  appointmentText: {
+    fontSize: 12,
+    color: '#666',
   },
 });
 

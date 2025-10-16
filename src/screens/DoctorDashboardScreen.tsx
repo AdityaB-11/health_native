@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
-import { Text, Card, Surface, IconButton, Chip, Avatar, ActivityIndicator } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
+import { Text, Card, Surface, IconButton, Chip, Avatar, ActivityIndicator, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { getAppointmentsByDoctor, getTodayAppointmentsByDoctor, getDoctorById, getDoctorPatients } from '../api/firebaseServices';
+import { getAppointmentsByDoctor, getTodayAppointmentsByDoctor, getDoctorById, getDoctorByEmail, getDoctorPatients } from '../api/firebaseServices';
 import { Appointment, Doctor, Patient } from '../types';
 
 const DoctorDashboardScreen = ({ navigation }: any) => {
@@ -22,25 +22,51 @@ const DoctorDashboardScreen = ({ navigation }: any) => {
   });
 
   useEffect(() => {
+    console.log('Doctor Dashboard - User data:', user);
+    console.log('Doctor Dashboard - User role:', user?.role);
+    console.log('Doctor Dashboard - User doctorId:', user?.doctorId);
     loadDashboardData();
   }, [user]);
 
   const loadDashboardData = async () => {
-    if (!user?.doctorId) return;
+    if (!user) {
+      console.warn('No user found');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
-      
-      // Load doctor profile
-      const profile = await getDoctorById(user.doctorId);
+      let doctorId = user.doctorId;
+      let profile = null;
+
+      // If doctorId is not available, try to find doctor by email
+      if (!doctorId && user.email) {
+        console.log('Attempting to find doctor by email:', user.email);
+        profile = await getDoctorByEmail(user.email);
+        if (profile) {
+          doctorId = profile.id;
+          console.log('Found doctor profile by email:', profile);
+        }
+      } else if (doctorId) {
+        // Load doctor profile using doctorId
+        profile = await getDoctorById(doctorId);
+      }
+
+      if (!doctorId) {
+        console.warn('No doctorId found and unable to find doctor by email');
+        setLoading(false);
+        return;
+      }
+
       setDoctorProfile(profile);
 
       // Load today's appointments
-      const today = await getTodayAppointmentsByDoctor(user.doctorId);
+      const today = await getTodayAppointmentsByDoctor(doctorId);
       setTodayAppointments(today);
 
       // Load all appointments for stats
-      const allAppointments = await getAppointmentsByDoctor(user.doctorId);
+      const allAppointments = await getAppointmentsByDoctor(doctorId);
       setStats({
         total: allAppointments.length,
         scheduled: allAppointments.filter(a => a.status === 'scheduled').length,
@@ -49,7 +75,7 @@ const DoctorDashboardScreen = ({ navigation }: any) => {
       });
 
       // Load total patients
-      const patients = await getDoctorPatients(user.doctorId);
+      const patients = await getDoctorPatients(doctorId);
       setTotalPatients(patients.length);
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -88,6 +114,21 @@ const DoctorDashboardScreen = ({ navigation }: any) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2196F3" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return (
+      <View style={styles.errorContainer}>
+        <MaterialCommunityIcons name="alert-circle" size={64} color="#F44336" />
+        <Text style={styles.errorText}>User not found</Text>
+        <Text style={styles.errorSubText}>
+          Please log in again.
+        </Text>
+        <Button mode="contained" onPress={() => navigation.goBack()}>
+          Go Back
+        </Button>
       </View>
     );
   }
@@ -181,7 +222,15 @@ const DoctorDashboardScreen = ({ navigation }: any) => {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => navigation.navigate('DoctorProfile')}
+              onPress={() => {
+                const doctorId = user?.doctorId || doctorProfile?.id;
+                if (doctorId) {
+                  navigation.navigate('DoctorProfile', { doctorId });
+                } else {
+                  console.warn('Doctor ID not found. User:', user, 'Profile:', doctorProfile);
+                  Alert.alert('Error', 'Unable to load profile. Doctor ID not found.');
+                }
+              }}
             >
               <LinearGradient
                 colors={['#9C27B0', '#7B1FA2']}
@@ -477,6 +526,25 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#666',
+    lineHeight: 20,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    gap: 16,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#F44336',
+    textAlign: 'center',
+  },
+  errorSubText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
     lineHeight: 20,
   },
 });

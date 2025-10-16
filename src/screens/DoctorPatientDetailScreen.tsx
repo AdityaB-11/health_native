@@ -102,6 +102,7 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
 
       <ScrollView
         style={styles.content}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -129,7 +130,7 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
         </Card>
 
         {/* Medical Alerts */}
-        {patient.allergies.length > 0 && (
+        {(patient.allergies || []).length > 0 && (
           <Card style={[styles.card, styles.alertCard]}>
             <Card.Title
               title="Allergies"
@@ -138,7 +139,7 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
             />
             <Card.Content>
               <View style={styles.chipsContainer}>
-                {patient.allergies.map((allergy, index) => (
+                {(patient.allergies || []).map((allergy, index) => (
                   <Chip
                     key={index}
                     icon="alert"
@@ -154,14 +155,14 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
         )}
 
         {/* Current Medications */}
-        {patient.currentMedications.length > 0 && (
+        {(patient.currentMedications || []).length > 0 && (
           <Card style={styles.card}>
             <Card.Title
               title="Current Medications"
               left={(props) => <MaterialCommunityIcons name="pill" {...props} color="#FF9800" />}
             />
             <Card.Content>
-              {patient.currentMedications.map((medication, index) => (
+              {(patient.currentMedications || []).map((medication, index) => (
                 <View key={index} style={styles.medicationRow}>
                   <MaterialCommunityIcons name="checkbox-marked-circle" size={20} color="#4CAF50" />
                   <Text style={styles.medicationText}>{medication}</Text>
@@ -172,14 +173,14 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
         )}
 
         {/* Medical History */}
-        {patient.medicalHistory.length > 0 && (
+        {(patient.medicalHistory || []).length > 0 && (
           <Card style={styles.card}>
             <Card.Title
               title="Medical History"
               left={(props) => <MaterialCommunityIcons name="file-document" {...props} color="#9C27B0" />}
             />
             <Card.Content>
-              {patient.medicalHistory.map((history, index) => (
+              {(patient.medicalHistory || []).map((history, index) => (
                 <View key={index} style={styles.historyRow}>
                   <MaterialCommunityIcons name="circle-medium" size={20} color="#9C27B0" />
                   <Text style={styles.historyText}>{history}</Text>
@@ -192,14 +193,14 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
         {/* Appointment History */}
         <Card style={styles.card}>
           <Card.Title
-            title={`Appointment History (${appointments.length})`}
+            title={`Appointment History (${(appointments || []).length})`}
             left={(props) => <MaterialCommunityIcons name="calendar-multiple" {...props} color="#2196F3" />}
           />
           <Card.Content>
-            {appointments.length === 0 ? (
+            {(appointments || []).length === 0 ? (
               <Text style={styles.emptyText}>No appointments yet</Text>
             ) : (
-              appointments.slice(0, 5).map((appointment) => (
+              (appointments || []).slice(0, 5).map((appointment) => (
                 <TouchableOpacity
                   key={appointment.id}
                   onPress={() => navigation.navigate('AppointmentDetail', { appointmentId: appointment.id })}
@@ -232,14 +233,14 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
         {/* Lab Reports */}
         <Card style={styles.card}>
           <Card.Title
-            title={`Lab Reports (${labReports.length})`}
+            title={`Lab Reports (${(labReports || []).length})`}
             left={(props) => <MaterialCommunityIcons name="file-chart" {...props} color="#FF9800" />}
           />
           <Card.Content>
-            {labReports.length === 0 ? (
+            {(labReports || []).length === 0 ? (
               <Text style={styles.emptyText}>No lab reports available</Text>
             ) : (
-              labReports.map((report) => (
+              (labReports || []).map((report) => (
                 <Surface key={report.id} style={styles.reportItem}>
                   <View style={styles.reportHeader}>
                     <MaterialCommunityIcons name="file-document" size={24} color="#FF9800" />
@@ -256,6 +257,26 @@ const DoctorPatientDetailScreen = ({ route, navigation }: any) => {
           </Card.Content>
         </Card>
       </ScrollView>
+      
+      {/* Book Appointment Button */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.bookButton}
+          onPress={() => navigation.navigate('BookAppointment', { 
+            patientId: patient?.id,
+            patientName: patient?.name,
+            doctorId: user?.doctorId 
+          })}
+        >
+          <LinearGradient
+            colors={['#4CAF50', '#388E3C']}
+            style={styles.buttonGradient}
+          >
+            <MaterialCommunityIcons name="calendar-plus" size={24} color="#fff" />
+            <Text style={styles.bookButtonText}>Book Appointment</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -264,6 +285,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    paddingBottom: 100, // Space for the floating button
   },
   loadingContainer: {
     flex: 1,
@@ -427,6 +451,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
     marginTop: 2,
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+  },
+  bookButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  buttonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  bookButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
